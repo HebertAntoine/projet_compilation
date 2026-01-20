@@ -37,8 +37,7 @@ void analyse_passe_1(node_t root) {
             if (root->opr[2]) analyse_passe_1(root->opr[2]);
             break;
 
-        case NODE_IDENT
-            // Utilisation d'un identificateur
+        case NODE_IDENT:
             {
                 symbol_t *sym = symbol_lookup(root->id);
                 if (!sym) {
