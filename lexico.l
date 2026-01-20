@@ -1,9 +1,12 @@
 %{
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
+#include "miniccutils.h"
 #include "defs.h"
 #include "common.h"
 
@@ -46,7 +49,7 @@ ENTIER_HEXA	0x({CHIFFRE}|{LETTRE_HEXA})+
 ENTIER		({ENTIER_DEC}|{ENTIER_HEXA})
 
 CHAINE_CAR	[\x20-\x21\x23-\x5B\x5D-\x7E]
-CHAINE		\"({CHAINE_CAR}|\\\"|\\n)\"
+CHAINE      \"({CHAINE_CAR}|\\\"|\\n|\\\\)*\"
 
 COMMENTAIRE	"//"[\x20-\x7E]*
 
@@ -113,7 +116,7 @@ COMMENTAIRE	"//"[\x20-\x7E]*
 
 {CHAINE} {
                 #if !LEX_DEBUG
-                yylval.strval = decode_chaine(yytext);
+                yylval.strval = strdupl(yytext);
                 #endif
                 RETURN(TOK_STRING);
 }

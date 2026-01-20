@@ -56,6 +56,8 @@ static node_t noed_ident(char *s);
 static node_t noed_stringval(char *s);
 static node_t noed_type(node_type t);
 static node_t noed_LPAR(node_t e);
+static char *decode_chaine(const char *s);
+
 %}
 
 %parse-param { node_t * program_root }
@@ -69,7 +71,6 @@ static node_t noed_LPAR(node_t e);
 
 /* Definir les token ici avec leur associativite, dans le bon ordre */
 /* A completer */
-%token TOK_VOID TOK_INT TOK_BOOL TOK_TRUE TOK_FALSE
 
 %token TOK_VOID TOK_INT TOK_BOOL TOK_TRUE TOK_FALSE TOK_IF TOK_DO TOK_WHILE TOK_FOR
 %token TOK_PRINT TOK_SEMICOL TOK_COMMA TOK_LPAR TOK_RPAR TOK_LACC TOK_RACC
@@ -340,9 +341,9 @@ static node_t make_node_4(node_nature nature, node_t op0, node_t op1, node_t op2
 
     return n;
 }
-
+/*
 void analyse_tree(node_t root) {
-    //dump_tree(root, "apres_syntaxe.dot");
+    dump_tree(root, "apres_syntaxe.dot");
     if (!stop_after_syntax) {
         analyse_passe_1(root);
         //dump_tree(root, "apres_passe_1.dot");
@@ -354,6 +355,30 @@ void analyse_tree(node_t root) {
         }
         free_global_strings();
     }
+    free_nodes(root);
+}
+*/
+
+void analyse_tree(node_t root) {
+    if (!root) return;
+
+    dump_tree(root, "apres_syntaxe.dot");
+
+    if (stop_after_syntax) {
+        free_nodes(root);
+        return;
+    }
+
+    analyse_passe_1(root);
+
+    if (!stop_after_verif) {
+        create_program();
+        gen_code_passe_2(root);
+        dump_mips_program(outfile);
+        free_program();
+    }
+
+    free_global_strings();
     free_nodes(root);
 }
 
