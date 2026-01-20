@@ -5,9 +5,6 @@
 #include "passe_1.h"
 #include "miniccutils.h"
 
-
-void analyse_passe_1(node_t root) {
-
 extern int trace_level;
 
 void analyse_passe_1(node_t root) {
