@@ -30,6 +30,32 @@ void analyse_tree(node_t root);
 node_t make_node(node_nature nature, int nops, ...);
 /* A completer */
 
+// declaration sinon erreur
+
+static node_t make_node_1(node_nature nature, node_t op0);
+static node_t make_node_2(node_nature nature, node_t op0, node_t op1);
+static node_t make_node_3(node_nature nature, node_t op0, node_t op1, node_t op2);
+static node_t make_node_4(node_nature nature, node_t op0, node_t op1, node_t op2, node_t op3);
+
+static node_t noed_LIST(node_t a, node_t b);
+static node_t noed_DECLS(node_t type, node_t decl_list);
+static node_t noed_INT(void);
+static node_t noed_BOOL(void);
+static node_t noed_VOID(void);
+static node_t noed_COMMA(node_t a, node_t b);
+static node_t noed_AFFECT(node_t a, node_t b);
+static node_t noed_SEMICAL(node_t e);
+static node_t noed_WHILE(node_t cond, node_t body);
+static node_t noed_DOWHILE(node_t body, node_t cond);
+static node_t noed_PRINT(node_t params);
+static node_t noed_LACC(node_t decls, node_t insts);
+static node_t noed_INTVAL(int32_t v);
+static node_t noed_TRUE(void);
+static node_t noed_FALSE(void);
+static node_t noed_ident(char *s);
+static node_t noed_stringval(char *s);
+static node_t noed_type(node_type t);
+static node_t noed_LPAR(node_t e);
 %}
 
 %parse-param { node_t * program_root }
@@ -209,46 +235,29 @@ node_t make_node(node_nature nature, int nops, ...){
     return n;
 }
 
+
 // cree l'architecture de l'arbre 
 
-static node_t make_program(node_t decls, node_t mainf)   { return make_node_n(NODE_PROGRAM, 2, decls, mainf); }
-static node_t make_block(node_t decls, node_t insts)     { return make_node_n(NODE_BLOCK,   2, decls, insts); }
-static node_t make_list(node_t a, node_t b)              { return make_node_n(NODE_LIST,    2, a, b); }
-static node_t make_decls(node_t type, node_t decl_list)  { return make_node_n(NODE_DECLS,   2, type, decl_list); }
-static node_t make_decl(node_t ident, node_t init)       { return make_node_n(NODE_DECL,    2, ident, init); }
-static node_t make_while(node_t cond, node_t body)       { return make_node_n(NODE_WHILE,   2, cond, body); }
-static node_t make_dowhile(node_t body, node_t cond)     { return make_node_n(NODE_DOWHILE, 2, body, cond); }
-static node_t make_affect(node_t ident, node_t expr)     { return make_node_n(NODE_AFFECT,  2, ident, expr); }
+static node_t noed_LIST(node_t a, node_t b) { return make_node(NODE_LIST, 2, a, b); }
+static node_t noed_DECLS(node_t type, node_t decl_list) { return make_node(NODE_DECLS, 2, type, decl_list); }
+static node_t noed_COMMA(node_t a, node_t b) { return make_node(NODE_LIST, 2, a, b); }
+static node_t noed_AFFECT(node_t a, node_t b) { return make_node(NODE_AFFECT, 2, a, b); }
+static node_t noed_SEMICAL(node_t e) { return make_node(NODE_LIST, 1, e); }
+static node_t noed_WHILE(node_t cond, node_t body) { return make_node(NODE_WHILE, 2, cond, body); }
+static node_t noed_DOWHILE(node_t body, node_t cond) { return make_node(NODE_DOWHILE, 2, body, cond); }
+static node_t noed_PRINT(node_t params) { return make_node(NODE_PRINT, 1, params); }
+static node_t noed_LACC(node_t decls, node_t insts) { return make_node(NODE_BLOCK, 2, decls, insts); }
 
-static node_t make_ident(char *name) {
-    node_t n = make_node_n(NODE_IDENT, 0);
-    n->ident = name;
-    return n;
-}
-
-static node_t make_type(node_type t) {
-    node_t n = make_node_n(NODE_TYPE, 0);
-    n->type = t;
-    return n;
-}
-
-static node_t make_intval(int32_t v) {
-    node_t n = make_node_n(NODE_INTVAL, 0);
-    n->value = v;
-    return n;
-}
-
-static node_t make_boolval(bool b) {
-    node_t n = make_node_n(NODE_BOOLVAL, 0);
-    n->value = b ? 1 : 0;
-    return n;
-}
-
-static node_t make_stringval(char *s) {
-    node_t n = make_node_n(NODE_STRINGVAL, 0);
-    n->str = s;
-    return n;
-}
+static node_t noed_ident(char *s) { node_t n = make_node(NODE_IDENT, 0); n->ident = s; return n; }
+static node_t noed_type(node_type t) { node_t n = make_node(NODE_TYPE, 0); n->type = t; return n; }
+static node_t noed_INT(void) { return noed_type(TYPE_INT); }
+static node_t noed_BOOL(void) { return noed_type(TYPE_BOOL); }
+static node_t noed_VOID(void) { return noed_type(TYPE_VOID); }
+static node_t noed_INTVAL(int32_t v) { node_t n = make_node(NODE_INTVAL, 0); n->value = v; return n; }
+static node_t noed_TRUE(void) { node_t n = make_node(NODE_BOOLVAL, 0); n->value = 1; return n; }
+static node_t noed_FALSE(void) { node_t n = make_node(NODE_BOOLVAL, 0); n->value = 0; return n; }
+static node_t noed_stringval(char *s) { node_t n = make_node(NODE_STRINGVAL, 0); n->str = s; return n; }
+static node_t noed_LPAR(node_t e) { return e; }
 
 static node_t make_node_1(node_nature nature, node_t op0) {
     node_t n = malloc(sizeof(node_s));
