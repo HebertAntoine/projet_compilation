@@ -34,14 +34,23 @@ extern int yydebug;
 %option yylineno
 
 
-LETTRE          [a-zA-Z]
-/* A completer ; fausses definitions pour passer la compilation 
-IDF             A
-ENTIER          0
-CHAINE          B
-COMMENTAIRE     C
+LETTRE		[a-zA-Z]
+CHIFFRE		[0-9]
+IDF		{LETTRE}({LETTRE}|{CHIFFRE}|_)*
 
-*/ 
+CHIFFRE_NON_NUL	[1-9]
+ENTIER_DEC	0|{CHIFFRE_NON_NUL}({CHIFFRE})*
+LETTRE_HEXA	[a-fA-F]
+ENTIER_HEXA	0x({CHIFFRE}|{LETTRE_HEXA})+
+
+ENTIER		({ENTIER_DEC}|{ENTIER_HEXA})
+
+CHAINE_CAR	[\x20-\x21\x23-\x5B\x5D-\x7E]
+CHAINE		\"({CHAINE_CAR}|\\\"|\\n)\"
+
+COMMENTAIRE	"//"[\x20-\x7E]*
+
+
 
 %%
 
@@ -57,22 +66,6 @@ COMMENTAIRE     C
 "do"            RETURN(TOK_DO);
 "print"         RETURN(TOK_PRINT);
 
-LETTRE          [a-z];
-CHIFFRE         [0-9];
-IDF             {LETTRE}({LETTRE}|{CHIFFRE}| )*
-
-
-CHIFFRE_NON_NUL = {’1’, ..., ’9’}
-ENTIER_DEC = ’0’ | CHIFFRE_NON_NUL CHIFFRE*
-LETTRE_HEXA = {’a’, ..., ’f’, ’A’, ..., ’F’}
-ENTIER_HEXA = ’0x’ (CHIFFRE | LETTRE_HEXA)+
-ENTIER = ENTIER_DEC | ENTIER_HEXA
-
-WS              [ \t\r\n]+
-COMMENT         "//"[^\n]*
-STRING_CHAR     [ -!#-\[\]-~]
-ESCAPE_SEQ      \\\"|\\n|\\\\
-STRING          \"({STRING_CHAR}|{ESCAPE_SEQ})*\"
 
 
 "+"             RETURN(TOK_PLUS);
@@ -80,19 +73,22 @@ STRING          \"({STRING_CHAR}|{ESCAPE_SEQ})*\"
 "*"             RETURN(TOK_MUL);
 "/"             RETURN(TOK_DIV);
 "%"             RETURN(TOK_MOD);
-">"             RETURN(TOK_GT);
-"<"             RETURN(TOK_LT);
+">>>"           RETURN(TOK_SRA);
+">>"            RETURN(TOK_SRL);
+"<<"            RETURN(TOK_SLL);
 ">="            RETURN(TOK_GE);
 "<="            RETURN(TOK_LE);
+">"             RETURN(TOK_GT);
+"<"             RETURN(TOK_LT);
 "=="            RETURN(TOK_EQ);
 "!="            RETURN(TOK_NE);
 "!"             RETURN(TOK_NOT);
 "~"             RETURN(TOK_BNOT);
+"&&"            RETURN(TOK_AND);
 "&"             RETURN(TOK_BAND);
+"||"            RETURN(TOK_OR);
 "|"             RETURN(TOK_BOR);
 "^"             RETURN(TOK_BXOR);
-"&&"            RETURN(TOK_AND);
-"||"            RETURN(TOK_OR);
 "="             RETURN(TOK_AFFECT);
 ";"             RETURN(TOK_SEMICOL);
 ","             RETURN(TOK_COMMA);
@@ -100,9 +96,6 @@ STRING          \"({STRING_CHAR}|{ESCAPE_SEQ})*\"
 ")"             RETURN(TOK_RPAR);
 "{"             RETURN(TOK_LACC);
 "}"             RETURN(TOK_RACC);
-">>>"           RETURN(TOK_SRA);
-">>"            RETURN(TOK_SRL);
-"<<"            RETURN(TOK_SLL);
 
 {IDF} {
                 #if !LEX_DEBUG
