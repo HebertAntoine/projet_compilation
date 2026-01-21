@@ -7,8 +7,39 @@
 #include "miniccutils.h"
 
 extern int trace_level;
+typedef struct ctx_stack_s {
+    context_t ctx;
+    struct ctx_stack_s *prev;
+} ctx_stack_t;
 
+static ctx_stack_t *ctx_stack = NULL;
 static context_t current_context = NULL;
+
+static void enter_scope(context_t parent) {
+    context_t ctx = create_context(parent);
+    ctx_stack_t *n = malloc(sizeof(*n));
+    n->ctx = ctx;
+    n->prev = ctx_stack;
+    ctx_stack = n;
+    current_context = ctx;
+}
+
+static void leave_scope(void) {
+    ctx_stack_t *top = ctx_stack;
+    ctx_stack = top->prev;
+    free_context(top->ctx);
+    free(top);
+    current_context = ctx_stack ? ctx_stack->ctx : NULL;
+}
+
+static node_t lookup_ident(const char *name) {
+    for (ctx_stack_t *p = ctx_stack; p; p = p->prev) {
+        node_t found = (node_t) get_data(p->ctx, (char*)name);
+        if (found) return found;
+    }
+    return NULL;
+}
+
 static node_type type_op_unaire(node_nature op, node_type t) {
     switch (op) {
         case NODE_UMINUS: return (t == TYPE_INT)  ? TYPE_INT  : TYPE_NONE;
@@ -54,34 +85,26 @@ void analyse_passe_1(node_t root) {
 
     switch (root->nature) {
 
-        /* ========= PROGRAMME ========= */
         case NODE_PROGRAM:
-            current_context = create_context();   // contexte global
+            enter_scope(NULL);
             analyse_passe_1(root->opr[0]);
             analyse_passe_1(root->opr[1]);
-            free_context(current_context);
-            current_context = NULL;
+            leave_scope();
             break;
 
-        /* ========= BLOCS / PORTÉES ========= */
-        case NODE_BLOCK: {
-            context_t saved = current_context;
-            current_context = create_context(saved);   // nouveau scope, parent = saved
 
-            analyse_passe_1(root->opr[0]); // déclarations
-            analyse_passe_1(root->opr[1]); // instructions
-
-            free_context(current_context);
-            current_context = saved;
+        case NODE_BLOCK:
+            enter_scope(current_context);
+            analyse_passe_1(root->opr[0]);
+            analyse_passe_1(root->opr[1]);
+            leave_scope();
             break;
-        }
 
         case NODE_LIST:
-            if (root->nops > 0) analyse_passe_1(root->opr[0]);
-            if (root->nops > 1) analyse_passe_1(root->opr[1]);
+            if (root->nops > 0 && root->opr[0]) analyse_passe_1(root->opr[0]);
+            if (root->nops > 1 && root->opr[1]) analyse_passe_1(root->opr[1]);
             break;
 
-        /* ========= DECLS ========= */
         case NODE_DECLS: {
             node_type t = root->opr[0]->type;
             node_t p = root->opr[1];
@@ -138,9 +161,8 @@ void analyse_passe_1(node_t root) {
             break;
         }
 
-        /* ========= IDENT ========= */
         case NODE_IDENT: {
-            node_t decl = get_data(current_context, root->ident);
+            node_t decl = lookup_ident(root->ident);
             if (!decl) {
                 printf("Erreur ligne %d: identificateur \"%s\" non défini\n",
                        root->lineno, root->ident);
@@ -150,7 +172,6 @@ void analyse_passe_1(node_t root) {
             break;
         }
 
-        /* ========= LITTERAUX ========= */
         case NODE_TYPE:
             break;
         case NODE_INTVAL:
@@ -163,21 +184,12 @@ void analyse_passe_1(node_t root) {
             root->type = TYPE_NONE;
             break;
 
-        /* ========= FUNC ========= */
-        case NODE_FUNC: {
-            context_t saved = current_context;
-            current_context = create_context(saved);   // contexte de la fonction
-
-            analyse_passe_1(root->opr[2]); // corps
-            if (root->nops > 3 && root->opr[3])
-                analyse_passe_1(root->opr[3]);
-
-            free_context(current_context);
-            current_context = saved;
+        case NODE_FUNC:
+            enter_scope(current_context);
+            analyse_passe_1(root->opr[2]);
+            leave_scope();
             break;
-        }
 
-        /* ========= CONTROLE ========= */
         case NODE_IF:
             analyse_passe_1(root->opr[0]);
             if (root->opr[0]->type != TYPE_BOOL) {
@@ -221,8 +233,6 @@ void analyse_passe_1(node_t root) {
             }
             break;
 
-        /* ========= PRINT ========= */
-        /* !!! bloc PRINT laissé EXACTEMENT comme tu l'avais !!! */
         case NODE_PRINT: {
             node_t p = root->opr[0];
             while (p) {
@@ -239,7 +249,6 @@ void analyse_passe_1(node_t root) {
             break;
         }
 
-        /* ========= UNAIRES ========= */
         case NODE_NOT:
         case NODE_BNOT:
         case NODE_UMINUS:
@@ -251,7 +260,6 @@ void analyse_passe_1(node_t root) {
             }
             break;
 
-        /* ========= BINAIRES ========= */
         case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
         case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE:
         case NODE_EQ: case NODE_NE:
@@ -270,7 +278,6 @@ void analyse_passe_1(node_t root) {
             }
             break;
 
-        /* ========= AFFECT ========= */
         case NODE_AFFECT:
             analyse_passe_1(root->opr[0]);
             analyse_passe_1(root->opr[1]);
