@@ -74,19 +74,92 @@ void main() {
 }
 ```
 
+---
 
+### ▶️ Lancer un conteneur GCC
+
+```bash
 docker run -it --rm \
   --platform=linux/amd64 \
   -v "$(pwd)":/work -w /work \
   gcc:latest bash
+```
 
+🔍 Explications :
+
+- `docker run` : lance un conteneur
+- `-it` : mode interactif (terminal)
+- `--rm` : supprime automatiquement le conteneur à la sortie
+- `--platform=linux/amd64` : force l’architecture Linux x86_64 (évite des bugs sur Mac M1/M2)
+- `-v "$(pwd)":/work` : partage le dossier du projet avec le conteneur
+- `-w /work` : définit `/work` comme dossier de travail
+- `gcc:latest` : image officielle avec GCC installé
+- `bash` : ouvre un terminal dans le conteneur
+
+---
+
+### 📦 Installer les dépendances
+
+À faire **une seule fois dans le conteneur** :
+
+```bash
 apt-get update
 apt-get install -y bison flex make graphviz
+```
 
+🔍 Explications :
+
+- `bison` → analyse syntaxique
+- `flex` → analyse lexicale
+- `make` → compilation automatique
+- `graphviz` → génération d’arbres `.dot`
+
+---
+
+### 🛠️ Compiler le projet
+
+```bash
 make realclean
 make
+```
 
+🔍 Explications :
+
+- `make realclean` : supprime tous les fichiers générés
+- `make` : compile tout le projet et crée `minicc`
+
+---
+
+### 🧪 Tester le compilateur
+
+```bash
 ./minicc t1.c ; echo $?
 ./minicc t2.c ; echo $?
 ./minicc t3.c ; echo $?
+```
 
+🔍 Explications :
+
+- `./minicc t1.c` → lance le compilateur sur un fichier test
+- `echo $?` → affiche le code de retour du programme
+
+Codes de retour attendus :
+
+- `0` → ✅ programme valide
+- `1` → ❌ erreur détectée par le compilateur
+
+| Fichier | Résultat attendu | Raison |
+|--------|------------------|--------|
+t1.c | 0 | programme correct
+t2.c | 1 | variable utilisée hors portée
+t3.c | 0 | masquage de variable correct
+
+---
+
+### 🚪 Quitter le conteneur
+
+```bash
+exit
+```
+
+Le conteneur est automatiquement supprimé grâce à `--rm`.
