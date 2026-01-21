@@ -17,8 +17,8 @@ void analyse_passe_2(node_t root) {
             create_data_sec_inst();
             create_text_sec_inst();
             
+            reset_temporary_max_offset();
             create_stack_allocation_inst();
-            create_addiu_inst(30, 29, 0);
 
             analyse_passe_2(root->opr[0]);
             analyse_passe_2(root->opr[1]);
@@ -51,7 +51,7 @@ void analyse_passe_2(node_t root) {
             int32_t offset = decl->offset;
 
             allocate_reg();
-            create_lw_inst(get_current_reg(), offset, 30);
+            create_lw_inst(get_current_reg(), offset, 29);
             break;
         }
 
@@ -59,7 +59,8 @@ void analyse_passe_2(node_t root) {
             analyse_passe_2(root->opr[1]);
             int32_t r = get_current_reg();
             node_t decl = get_decl_node(root->opr[0]->ident);
-            create_sw_inst(r, decl->offset, 30);
+            create_sw_inst(r, decl->offset, 29);
+            release_reg();
             break;
         }
         
@@ -73,7 +74,8 @@ void analyse_passe_2(node_t root) {
                     char * label = get_global_string(idx);
 
                     create_label_str_inst(label);
-                    create_addiu_inst(4, 0, 0);
+                    create_lui_inst(4, 0x1001);
+                    create_ori_inst(4, 4, 0);
                     create_addiu_inst(2, 0, 4);
                     create_syscall_inst();
                 } else {
@@ -95,7 +97,9 @@ void analyse_passe_2(node_t root) {
 
         case NODE_PLUS:
         case NODE_MINUS:
-        case NODE_MUL: {
+        case NODE_MUL:
+        case NODE_DIV:
+        case NODE_MOD: {
             analyse_passe_2(root->opr[0]);
             int32_t r1 = get_current_reg();
             analyse_passe_2(root->opr[1]);
@@ -108,52 +112,92 @@ void analyse_passe_2(node_t root) {
             else if (root->nature == NODE_MUL) {
                 create_mult_inst(r1, r2);
                 create_mflo_inst(r1);
+            } else if (root->nature == NODE_DIV) {
+                create_teq_inst(r2, 0);
+                create_div_inst(r1, r2);
+                create_mflo_inst(r1);
+            } else {
+                create_teq_inst(r2, 0);
+                create_div_inst(r1, r2);
+                create_mfhi_inst(r1);
             }
-            
-            release_reg();
-            break;
-        }
-        
-        case NODE_DIV: {
-            analyse_passe_2(root->opr[0]);
-            int32_t r1 = get_current_reg();
-
-            analyse_passe_2(root->opr[1]);
-            int32_t r2 = get_current_reg();
-
-            create_teq_inst(r2, 0);
-
-            create_div_inst(r1, r2);
-            create_mflo_inst(r1);
 
             release_reg();
             break;
         }
         
-        case NODE_MOD: {
+        case NODE_LT:
+        case NODE_GT:
+        case NODE_LE:
+        case NODE_GE: {
             analyse_passe_2(root->opr[0]);
             int32_t r1 = get_current_reg();
             analyse_passe_2(root->opr[1]);
             int32_t r2 = get_current_reg();
 
-            create_teq_inst(r2, 0);
-            create_div_inst(r1, r2);
-            create_mfhi_inst(r1);
+            if (root->nature == NODE_LT)
+                create_slt_inst(r1, r1, r2);
+            else if (root->nature == NODE_GT)
+                create_slt_inst(r1, r2, r1);
+            else if (root->nature == NODE_LE) {
+                create_slt_inst(r1, r2, r1);
+                create_xori_inst(r1, r1, 1);
+            } else {
+                create_slt_inst(r1, r1, r2);
+                create_xori_inst(r1, r1, 1);
+            }
 
             release_reg();
             break;
         }
-        case NODE_LT: {
-            int32_t r1, r2;
+
+        case NODE_EQ:
+        case NODE_NE: {
             analyse_passe_2(root->opr[0]);
-            r1 = get_current_reg();
+            int32_t r1 = get_current_reg();
             analyse_passe_2(root->opr[1]);
-            r2 = get_current_reg();
+            int32_t r2 = get_current_reg();
 
-            create_slt_inst(r1, r1, r2);
+            create_xor_inst(r1, r1, r2);
+            if (root->nature == NODE_EQ)
+                create_sltiu_inst(r1, r1, 1);
+            else
+                create_sltu_inst(r1, 0, r1);
+
             release_reg();
             break;
         }
+
+        case NODE_AND:
+        case NODE_OR: {
+            analyse_passe_2(root->opr[0]);
+            int32_t r1 = get_current_reg();
+            analyse_passe_2(root->opr[1]);
+            int32_t r2 = get_current_reg();
+
+            if (root->nature == NODE_AND)
+                create_and_inst(r1, r1, r2);
+            else
+                create_or_inst(r1, r1, r2);
+
+            release_reg();
+            break;
+        }
+        
+        case NODE_NOT: {
+            analyse_passe_2(root->opr[0]);
+            int32_t r = get_current_reg();
+            create_xori_inst(r, r, 1);
+            break;
+        }
+
+        case NODE_UMINUS: {
+            analyse_passe_2(root->opr[0]);
+            int32_t r = get_current_reg();
+            create_subu_inst(r, 0, r);
+            break;
+        }
+
 
         case NODE_IF: {
             int32_t lbl_else = get_new_label();
