@@ -41,6 +41,15 @@ head -n 10 apres_syntaxe.dot
 dot -Tpng apres_syntaxe.dot -o arbre.png
 ls -la arbre.png
 ```
+---
+
+## 🧹 Nettoyage du projet
+
+Pour supprimer tous les fichiers générés par la compilation (fichiers .o, fichiers flex/bison, exécutable minicc, fichiers temporaires) :
+```make clean```
+Pour un nettoyage complet (y.tab.c, y.tab.h, lex.yy.c, minicc, out.s, etc.) :
+```make realclean```
+Cela permet de revenir à un projet propre avant une nouvelle compilation ou avant un commit Git.
 
 ---
 
@@ -64,3 +73,4 @@ void main() {
     print("a = ", a, " - b = ", b);
 }
 ```
+

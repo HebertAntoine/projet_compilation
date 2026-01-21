@@ -218,6 +218,7 @@ ident   : TOK_IDENT { $$ = noed_ident($1); }
 /* A completer et/ou remplacer avec d'autres fonctions */
 node_t make_node(node_nature nature, int nops, ...){
     node_t n = malloc(sizeof(node_s));
+    memset(n, 0, sizeof(node_s));
     va_list ap;
     n->nature = nature;
     n->type = TYPE_NONE;
@@ -226,7 +227,7 @@ node_t make_node(node_nature nature, int nops, ...){
     n->global_decl = 0;
     n->lineno = yylineno;
     n->nops = nops;
-    n->opr = (nops > 0) ? malloc(sizeof(node_t) * nops) : NULL;
+    n->opr = (nops > 0) ? calloc(nops, sizeof(node_t)) : NULL;
     va_start(ap, nops);
     for (int i = 0; i < nops; i++) {
         n->opr[i] = va_arg(ap, node_t);
@@ -262,6 +263,7 @@ static node_t noed_LPAR(node_t e) { return e; }
 
 static node_t make_node_1(node_nature nature, node_t op0) {
     node_t n = malloc(sizeof(node_s));
+    memset(n, 0, sizeof(node_s));
 // NODE_NOT, NODE_BNOT, NODE_UMINUS, NODE_PRINT
     n->nature = nature;           
     n->value = 0;
@@ -273,7 +275,7 @@ static node_t make_node_1(node_nature nature, node_t op0) {
     n->lineno = yylineno;
 
     n->nops = 1;
-    n->opr = malloc(sizeof(node_t) * 1);
+    n->opr = calloc(1, sizeof(node_t));
     n->opr[0] = op0;
 
     return n;
@@ -281,6 +283,7 @@ static node_t make_node_1(node_nature nature, node_t op0) {
 
 static node_t make_node_2(node_nature nature, node_t op0, node_t op1) {
     node_t n = malloc(sizeof(node_s));
+    memset(n, 0, sizeof(node_s));
 
 // NODE_MUL, NODE_DIV, NODE_PLUS, NODE_MINUS, NODE_MOD, NODE_LT, NODE_GT, NODE_LE, NODE_GE, NODE_EQ, NODE_NE, NODE_AND, NODE_OR, NODE_BAND, NODE_BOR, NODE_BXOR, NODE_SLL, NODE_SRA, NODE_SRL
 
@@ -293,7 +296,7 @@ static node_t make_node_2(node_nature nature, node_t op0, node_t op1) {
     n->node_num = 0;
     n->lineno = yylineno;
     n->nops = 2;
-    n->opr = malloc(sizeof(node_t) * 2);
+    n->opr = calloc(2, sizeof(node_t));
     n->opr[0] = op0;
     n->opr[1] = op1;
 
@@ -302,6 +305,7 @@ static node_t make_node_2(node_nature nature, node_t op0, node_t op1) {
 
 static node_t make_node_3(node_nature nature, node_t op0, node_t op1, node_t op2) {
     node_t n = malloc(sizeof(node_s));
+    memset(n, 0, sizeof(node_s));
 
     n->nature = nature;
     n->value = 0;
@@ -312,7 +316,7 @@ static node_t make_node_3(node_nature nature, node_t op0, node_t op1, node_t op2
     n->node_num = 0;
     n->lineno = yylineno;
     n->nops = 3;
-    n->opr = malloc(sizeof(node_t) * 3);
+    n->opr = calloc(3, sizeof(node_t));
     n->opr[0] = op0;
     n->opr[1] = op1;
     n->opr[2] = op2;
@@ -322,6 +326,7 @@ static node_t make_node_3(node_nature nature, node_t op0, node_t op1, node_t op2
 
 static node_t make_node_4(node_nature nature, node_t op0, node_t op1, node_t op2, node_t op3) {
     node_t n = malloc(sizeof(node_s));
+    memset(n, 0, sizeof(node_s));
 
     n->nature = nature;
     n->value = 0;
@@ -333,7 +338,7 @@ static node_t make_node_4(node_nature nature, node_t op0, node_t op1, node_t op2
     n->lineno = yylineno;
 
     n->nops = 4;
-    n->opr = malloc(sizeof(node_t) * 4);
+    n->opr = calloc(4, sizeof(node_t));
     n->opr[0] = op0;
     n->opr[1] = op1;
     n->opr[2] = op2;

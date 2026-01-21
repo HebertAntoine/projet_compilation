@@ -1,9 +1,7 @@
 void main() {
-    int a = 120, b = 80;
-
-    if (a > b) {
-        a = a - b;
-    }
-
-    print("a = ", a, " - b = ", b);
+  bool b = true;
+  int x = 3;
+  x = x + 2;
+  b = !b;
+  if (b) { x = x - 1; }
 }
