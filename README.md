@@ -74,3 +74,19 @@ void main() {
 }
 ```
 
+
+docker run -it --rm \
+  --platform=linux/amd64 \
+  -v "$(pwd)":/work -w /work \
+  gcc:latest bash
+
+apt-get update
+apt-get install -y bison flex make graphviz
+
+make realclean
+make
+
+./minicc t1.c ; echo $?
+./minicc t2.c ; echo $?
+./minicc t3.c ; echo $?
+
