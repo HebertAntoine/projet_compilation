@@ -16,11 +16,14 @@ void analyse_passe_2(node_t root) {
             create_program();
             create_data_sec_inst();
             create_text_sec_inst();
+            
+            create_stack_allocation_inst();
+            create_addiu_inst(30, 29, 0);
 
             analyse_passe_2(root->opr[0]);
             analyse_passe_2(root->opr[1]);
-
-            create_syscall_inst(); // exit
+            create_stack_deallocation_inst(get_temporary_max_offset());
+            create_syscall_inst();
             break;
 
         case NODE_BLOCK:
@@ -43,19 +46,12 @@ void analyse_passe_2(node_t root) {
             create_addiu_inst(get_current_reg(), 0, root->value ? 1 : 0);
             break;
 
-        case NODE_STRINGVAL: {
-            int32_t idx = add_string(root->str);
-            allocate_reg();
-            create_lui_inst(get_current_reg(), idx);
-            break;
-        }
-
         case NODE_IDENT: {
             node_t decl = get_decl_node(root->ident);
             int32_t offset = decl->offset;
 
             allocate_reg();
-            create_lw_inst(get_current_reg(), offset, 29); // $sp
+            create_lw_inst(get_current_reg(), offset, 30);
             break;
         }
 
@@ -63,28 +59,43 @@ void analyse_passe_2(node_t root) {
             analyse_passe_2(root->opr[1]);
             int32_t r = get_current_reg();
             node_t decl = get_decl_node(root->opr[0]->ident);
-            create_sw_inst(r, decl->offset, 29);
+            create_sw_inst(r, decl->offset, 30);
             break;
         }
-
+        
         case NODE_PRINT: {
             node_t p = root->opr[0];
             while (p) {
-                analyse_passe_2(p->opr[1]);
-                int32_t r = get_current_reg();
-                create_addiu_inst(4, r, 0);
-                create_addiu_inst(2, 0, 1);
-                create_syscall_inst();
-                release_reg();
+                node_t param = p->opr[1];
+
+                if (param->nature == NODE_STRINGVAL) {
+                    int32_t idx = add_string(param->str);
+                    char * label = get_global_string(idx);
+
+                    create_label_str_inst(label);
+                    create_addiu_inst(4, 0, 0);
+                    create_addiu_inst(2, 0, 4);
+                    create_syscall_inst();
+                } else {
+                    analyse_passe_2(param);
+                    int32_t r = get_current_reg();
+
+                    create_addiu_inst(4, r, 0);
+                    create_addiu_inst(2, 0, 1);
+                    create_syscall_inst();
+                    release_reg();
+                }
+
                 p = p->opr[0];
             }
             break;
         }
 
+
+
         case NODE_PLUS:
         case NODE_MINUS:
-        case NODE_MUL:
-        case NODE_DIV: {
+        case NODE_MUL: {
             analyse_passe_2(root->opr[0]);
             int32_t r1 = get_current_reg();
             analyse_passe_2(root->opr[1]);
@@ -98,16 +109,42 @@ void analyse_passe_2(node_t root) {
                 create_mult_inst(r1, r2);
                 create_mflo_inst(r1);
             }
-            else if (root->nature == NODE_DIV) {
-                create_div_inst(r1, r2);
-                create_mflo_inst(r1);
-            }
+            
+            release_reg();
+            break;
+        }
+        
+        case NODE_DIV: {
+            analyse_passe_2(root->opr[0]);
+            int32_t r1 = get_current_reg();
+
+            analyse_passe_2(root->opr[1]);
+            int32_t r2 = get_current_reg();
+
+            create_teq_inst(r2, 0);
+
+            create_div_inst(r1, r2);
+            create_mflo_inst(r1);
 
             release_reg();
             break;
         }
+        
+        case NODE_MOD: {
+            analyse_passe_2(root->opr[0]);
+            int32_t r1 = get_current_reg();
+            analyse_passe_2(root->opr[1]);
+            int32_t r2 = get_current_reg();
 
-        case NODE_LT:
+            create_teq_inst(r2, 0);
+            create_div_inst(r1, r2);
+            create_mfhi_inst(r1);
+
+            release_reg();
+            break;
+        }
+        case NODE_LT: {
+            int32_t r1, r2;
             analyse_passe_2(root->opr[0]);
             r1 = get_current_reg();
             analyse_passe_2(root->opr[1]);
@@ -116,6 +153,7 @@ void analyse_passe_2(node_t root) {
             create_slt_inst(r1, r1, r2);
             release_reg();
             break;
+        }
 
         case NODE_IF: {
             int32_t lbl_else = get_new_label();
