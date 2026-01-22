@@ -133,9 +133,9 @@ make
 ### 🧪 Tester le compilateur
 
 ```bash
-./minicc t1.c ; echo $?
-./minicc t2.c ; echo $?
-./minicc t3.c ; echo $?
+./minicc test1.c ; echo $?
+./minicc test2.c ; echo $?
+./minicc test3.c ; echo $?
 ```
 
 🔍 Explications :

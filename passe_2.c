@@ -7,7 +7,9 @@
 
 extern int trace_level;
 
-void analyse_passe_2(node_t root) {
+
+
+void gen_code_passe_2(node_t root) {
     if (!root) return;
 
     switch (root->nature) {
@@ -20,20 +22,20 @@ void analyse_passe_2(node_t root) {
             reset_temporary_max_offset();
             create_stack_allocation_inst();
 
-            analyse_passe_2(root->opr[0]);
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[1]);
             create_stack_deallocation_inst(get_temporary_max_offset());
             create_syscall_inst();
             break;
 
         case NODE_BLOCK:
-            analyse_passe_2(root->opr[0]);
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[1]);
             break;
 
         case NODE_LIST:
-            analyse_passe_2(root->opr[0]);
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[1]);
             break;
 
         case NODE_INTVAL:
@@ -56,7 +58,7 @@ void analyse_passe_2(node_t root) {
         }
 
         case NODE_AFFECT: {
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[1]);
             int32_t r = get_current_reg();
             node_t decl = get_decl_node(root->opr[0]->ident);
             create_sw_inst(r, decl->offset, 29);
@@ -79,7 +81,7 @@ void analyse_passe_2(node_t root) {
                     create_addiu_inst(2, 0, 4);
                     create_syscall_inst();
                 } else {
-                    analyse_passe_2(param);
+                    gen_code_passe_2(param);
                     int32_t r = get_current_reg();
 
                     create_addiu_inst(4, r, 0);
@@ -100,9 +102,9 @@ void analyse_passe_2(node_t root) {
         case NODE_MUL:
         case NODE_DIV:
         case NODE_MOD: {
-            analyse_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[0]);
             int32_t r1 = get_current_reg();
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[1]);
             int32_t r2 = get_current_reg();
 
             if (root->nature == NODE_PLUS)
@@ -130,9 +132,9 @@ void analyse_passe_2(node_t root) {
         case NODE_GT:
         case NODE_LE:
         case NODE_GE: {
-            analyse_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[0]);
             int32_t r1 = get_current_reg();
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[1]);
             int32_t r2 = get_current_reg();
 
             if (root->nature == NODE_LT)
@@ -153,9 +155,9 @@ void analyse_passe_2(node_t root) {
 
         case NODE_EQ:
         case NODE_NE: {
-            analyse_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[0]);
             int32_t r1 = get_current_reg();
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[1]);
             int32_t r2 = get_current_reg();
 
             create_xor_inst(r1, r1, r2);
@@ -170,9 +172,9 @@ void analyse_passe_2(node_t root) {
 
         case NODE_AND:
         case NODE_OR: {
-            analyse_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[0]);
             int32_t r1 = get_current_reg();
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[1]);
             int32_t r2 = get_current_reg();
 
             if (root->nature == NODE_AND)
@@ -185,14 +187,14 @@ void analyse_passe_2(node_t root) {
         }
         
         case NODE_NOT: {
-            analyse_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[0]);
             int32_t r = get_current_reg();
             create_xori_inst(r, r, 1);
             break;
         }
 
         case NODE_UMINUS: {
-            analyse_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[0]);
             int32_t r = get_current_reg();
             create_subu_inst(r, 0, r);
             break;
@@ -203,16 +205,16 @@ void analyse_passe_2(node_t root) {
             int32_t lbl_else = get_new_label();
             int32_t lbl_end  = get_new_label();
 
-            analyse_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[0]);
             create_beq_inst(get_current_reg(), 0, lbl_else);
             release_reg();
 
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[1]);
             create_j_inst(lbl_end);
 
             create_label_inst(lbl_else);
             if (root->opr[2])
-                analyse_passe_2(root->opr[2]);
+                gen_code_passe_2(root->opr[2]);
 
             create_label_inst(lbl_end);
             break;
@@ -223,11 +225,11 @@ void analyse_passe_2(node_t root) {
             int32_t lbl_end   = get_new_label();
 
             create_label_inst(lbl_start);
-            analyse_passe_2(root->opr[0]);
+            gen_code_passe_2(root->opr[0]);
             create_beq_inst(get_current_reg(), 0, lbl_end);
             release_reg();
 
-            analyse_passe_2(root->opr[1]);
+            gen_code_passe_2(root->opr[1]);
             create_j_inst(lbl_start);
 
             create_label_inst(lbl_end);
