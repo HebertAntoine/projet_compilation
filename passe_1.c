@@ -8,7 +8,7 @@
 
 extern int trace_level;
 typedef struct ctx_stack_s {
-    context_t ctx;Error line
+    context_t ctx;
     struct ctx_stack_s *prev;
 } ctx_stack_t;
 
