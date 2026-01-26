@@ -8,7 +8,7 @@
 
 extern int trace_level;
 typedef struct ctx_stack_s {
-    context_t ctx;
+    context_t ctx;Error line
     struct ctx_stack_s *prev;
 } ctx_stack_t;
 
@@ -133,20 +133,20 @@ void analyse_passe_1(node_t root) {
                     node_t ex = elt->opr[1];
 
                     if (id->nature != NODE_IDENT) {
-                        printf("Erreur ligne %d: déclaration invalide\n", elt->lineno);
+                        printf("Error line %d: déclaration invalide\n", elt->lineno);
                         exit(1);
                     }
 
                     id->type = t;
                     if (!context_add_element(current_context, id->ident, id)) {
-                        printf("Erreur ligne %d: identificateur \"%s\" redéfini\n",
+                        printf("Error line %d: identificateur \"%s\" redéfini\n",
                                id->lineno, id->ident);
                         exit(1);
                     }
 
                     analyse_passe_1(ex);
                     if (ex->type != t) {
-                        printf("Erreur ligne %d: type incompatible dans l'initialisation\n",
+                        printf("Error line %d: type incompatible dans l'initialisation\n",
                                elt->lineno);
                         exit(1);
                     }
@@ -154,7 +154,7 @@ void analyse_passe_1(node_t root) {
                     elt->type = t;
                 }
                 else {
-                    printf("Erreur ligne %d: élément inattendu dans déclaration\n", elt->lineno);
+                    printf("Error line %d: élément inattendu dans déclaration\n", elt->lineno);
                     exit(1);
                 }
             }
@@ -164,7 +164,7 @@ void analyse_passe_1(node_t root) {
         case NODE_IDENT: {
             node_t decl = lookup_ident(root->ident);
             if (!decl) {
-                printf("Erreur ligne %d: identificateur \"%s\" non défini\n",
+                printf("Error line %d: identificateur \"%s\" non défini\n",
                        root->lineno, root->ident);
                 exit(1);
             }
@@ -193,7 +193,7 @@ void analyse_passe_1(node_t root) {
         case NODE_IF:
             analyse_passe_1(root->opr[0]);
             if (root->opr[0]->type != TYPE_BOOL) {
-                printf("Erreur ligne %d: condition de if non booléenne\n", root->lineno);
+                printf("Error line %d: condition de if non booléenne\n", root->lineno);
                 exit(1);
             }
             analyse_passe_1(root->opr[1]);
@@ -205,7 +205,7 @@ void analyse_passe_1(node_t root) {
         case NODE_WHILE:
             analyse_passe_1(root->opr[0]);
             if (root->opr[0]->type != TYPE_BOOL) {
-                printf("Erreur ligne %d: condition de while non booléenne\n", root->lineno);
+                printf("Error line %d: condition de while non booléenne\n", root->lineno);
                 exit(1);
             }
             analyse_passe_1(root->opr[1]);
@@ -216,7 +216,7 @@ void analyse_passe_1(node_t root) {
             if (root->opr[1]) {
                 analyse_passe_1(root->opr[1]);
                 if (root->opr[1]->type != TYPE_BOOL) {
-                    printf("Erreur ligne %d: condition de for non booléenne\n", root->lineno);
+                    printf("Error line %d: condition de for non booléenne\n", root->lineno);
                     exit(1);
                 }
             }
@@ -228,7 +228,7 @@ void analyse_passe_1(node_t root) {
             analyse_passe_1(root->opr[0]);
             analyse_passe_1(root->opr[1]);
             if (root->opr[1]->type != TYPE_BOOL) {
-                printf("Erreur ligne %d: condition de do-while non booléenne\n", root->lineno);
+                printf("Error line %d: condition de do-while non booléenne\n", root->lineno);
                 exit(1);
             }
             break;
@@ -239,7 +239,7 @@ void analyse_passe_1(node_t root) {
                 node_t param = p->opr[1];
                 analyse_passe_1(param);
                 if (param->type == TYPE_VOID) {
-                    printf("Erreur ligne %d: print d'une expression void\n",
+                    printf("Error line %d: print d'une expression void\n",
                            param->lineno);
                     exit(1);
                 }
@@ -255,7 +255,7 @@ void analyse_passe_1(node_t root) {
             analyse_passe_1(root->opr[0]);
             root->type = type_op_unaire(root->nature, root->opr[0]->type);
             if (root->type == TYPE_NONE) {
-                printf("Erreur ligne %d: opérateur unaire incompatible\n", root->lineno);
+                printf("Error line %d: opérateur unaire incompatible\n", root->lineno);
                 exit(1);
             }
             break;
@@ -273,7 +273,7 @@ void analyse_passe_1(node_t root) {
                                          root->opr[0]->type,
                                          root->opr[1]->type);
             if (root->type == TYPE_NONE) {
-                printf("Erreur ligne %d: opérateur binaire incompatible\n", root->lineno);
+                printf("Error line %d: opérateur binaire incompatible\n", root->lineno);
                 exit(1);
             }
             break;
@@ -283,11 +283,11 @@ void analyse_passe_1(node_t root) {
             analyse_passe_1(root->opr[1]);
 
             if (root->opr[0]->nature != NODE_IDENT) {
-                printf("Erreur ligne %d: affectation sur une valeur non assignable\n", root->lineno);
+                printf("Error line %d: affectation sur une valeur non assignable\n", root->lineno);
                 exit(1);
             }
             if (root->opr[0]->type != root->opr[1]->type) {
-                printf("Erreur ligne %d: type gauche/droite incompatibles dans affectation\n", root->lineno);
+                printf("Error line %d: type gauche/droite incompatibles dans affectation\n", root->lineno);
                 exit(1);
             }
 
