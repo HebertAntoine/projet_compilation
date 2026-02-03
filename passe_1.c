@@ -6,39 +6,6 @@
 #include "passe_1.h"
 #include "miniccutils.h"
 
-extern int trace_level;
-typedef struct ctx_stack_s {
-    context_t ctx;
-    struct ctx_stack_s *prev;
-} ctx_stack_t;
-
-static ctx_stack_t *ctx_stack = NULL;
-static context_t current_context = NULL;
-
-static void enter_scope(context_t parent) {
-    context_t ctx = create_context(parent);
-    ctx_stack_t *n = malloc(sizeof(*n));
-    n->ctx = ctx;
-    n->prev = ctx_stack;
-    ctx_stack = n;
-    current_context = ctx;
-}
-
-static void leave_scope(void) {
-    ctx_stack_t *top = ctx_stack;
-    ctx_stack = top->prev;
-    free_context(top->ctx);
-    free(top);
-    current_context = ctx_stack ? ctx_stack->ctx : NULL;
-}
-
-static node_t lookup_ident(const char *name) {
-    for (ctx_stack_t *p = ctx_stack; p; p = p->prev) {
-        node_t found = (node_t) get_data(p->ctx, (char*)name);
-        if (found) return found;
-    }
-    return NULL;
-}
 
 static node_type type_op_unaire(node_nature op, node_type t) {
     switch (op) {
@@ -86,18 +53,18 @@ void analyse_passe_1(node_t root) {
     switch (root->nature) {
 
         case NODE_PROGRAM:
-            enter_scope(NULL);
+            push_global_context();
             analyse_passe_1(root->opr[0]);
             analyse_passe_1(root->opr[1]);
-            leave_scope();
+            pop_context();
             break;
 
 
         case NODE_BLOCK:
-            enter_scope(current_context);
+            push_context();
             analyse_passe_1(root->opr[0]);
             analyse_passe_1(root->opr[1]);
-            leave_scope();
+            pop_context();
             break;
 
         case NODE_LIST:
@@ -162,7 +129,7 @@ void analyse_passe_1(node_t root) {
         }
 
         case NODE_IDENT: {
-            node_t decl = lookup_ident(root->ident);
+            node_t decl = get_decl_node(root->ident);
             if (!decl) {
                 printf("Error line %d: identificateur \"%s\" non défini\n",
                        root->lineno, root->ident);
@@ -185,9 +152,9 @@ void analyse_passe_1(node_t root) {
             break;
 
         case NODE_FUNC:
-            enter_scope(current_context);
+            push_context();
             analyse_passe_1(root->opr[2]);
-            leave_scope();
+            pop_context();
             break;
 
         case NODE_IF:
